@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Levain Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,560;0,9..144,680;1,9..144,500&family=Space+Mono:wght@400;700&family=Work+Sans:wght@400;500;600&display=swap');
+
+  :root{
+    --crust:      #241a12;
+    --crust-2:    #2f2318;
+    --panel:      #1c140d;
+    --flour:      #f4ead4;
+    --flour-dim:  #cfc2a4;
+    --gold:       #c99a3f;
+    --gold-soft:  rgba(201,154,63,0.18);
+    --sage:       #8fa89b;
+    --sage-dim:   rgba(143,168,155,0.35);
+    --rule:       rgba(244,234,212,0.14);
+    --radius:     14px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 50% -10%, #3a2c1c 0%, var(--crust) 55%),
+      var(--crust);
+    color:var(--flour);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    padding:36px 18px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{max-width:600px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--gold);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:18px;height:1px;background:var(--gold);display:inline-block;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:680;
+    font-size:44px;
+    line-height:1.02;
+    margin:10px 0 8px;
+    letter-spacing:-0.01em;
+  }
+  h1 em{
+    font-style:italic;
+    font-weight:500;
+    color:var(--sage);
+  }
+  .sub{
+    color:var(--flour-dim);
+    font-size:14.5px;
+    max-width:40ch;
+    line-height:1.5;
+    margin-bottom:30px;
+  }
+
+  /* ---------- segmented control ---------- */
+  .seg{
+    display:flex;
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:999px;
+    padding:4px;
+    margin-bottom:30px;
+  }
+  .seg button{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--flour-dim);
+    font-family:'Work Sans',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    padding:11px 10px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .2s ease;
+    letter-spacing:.01em;
+  }
+  .seg button.active{
+    background:var(--gold);
+    color:#241a12;
+  }
+
+  /* ---------- section card ---------- */
+  .card{
+    background:var(--crust-2);
+    border:1px solid var(--rule);
+    border-radius:var(--radius);
+    padding:22px 22px 20px;
+    margin-bottom:18px;
+  }
+  .card-label{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:16px;
+  }
+  .card-label .t{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:15.5px;
+    color:var(--flour);
+  }
+  .card-label .v{
+    font-family:'Space Mono', monospace;
+    font-size:14px;
+    color:var(--gold);
+  }
+
+  /* ---------- slider (proof timeline) ---------- */
+  .timeline{position:relative; padding-top:6px; padding-bottom:26px;}
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:4px;
+    background:transparent;
+    margin:0;
+    position:relative;
+    z-index:2;
+  }
+  .track{
+    position:absolute;
+    left:0; right:0; top:6px;
+    height:4px;
+    border-radius:2px;
+    background:linear-gradient(90deg, var(--sage-dim), var(--gold));
+    opacity:.5;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    background:transparent; height:4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--gold);
+    border:3px solid var(--crust-2);
+    box-shadow:0 0 0 1px var(--gold);
+    margin-top:-7px;
+    cursor:pointer;
+  }
+  input[type=range]::-moz-range-track{background:transparent;height:4px;}
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--gold); border:3px solid var(--crust-2);
+    box-shadow:0 0 0 1px var(--gold); cursor:pointer;
+  }
+  .ticks{
+    position:relative;
+    height:18px;
+    margin-top:4px;
+  }
+  .tick{
+    position:absolute;
+    top:0;
+    transform:translateX(-50%);
+    font-family:'Space Mono', monospace;
+    font-size:10px;
+    color:var(--flour-dim);
+    white-space:nowrap;
+  }
+  .tick.major{color:var(--flour);}
+  .tick .mark{
+    display:block;
+    width:1px;
+    height:5px;
+    background:var(--rule);
+    margin:0 auto 3px;
+  }
+
+  .zone-readout{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+    font-family:'Space Mono', monospace;
+    font-size:11.5px;
+    color:var(--sage);
+  }
+  .zone-readout .dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
+
+  /* ---------- grams stepper ---------- */
+  .grams-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .stepper-btn{
+    width:38px;height:38px;
+    border-radius:10px;
+    border:1px solid var(--rule);
+    background:var(--panel);
+    color:var(--flour);
+    font-size:18px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Work Sans',sans-serif;
+    transition:border-color .15s ease;
+  }
+  .stepper-btn:hover{border-color:var(--gold);}
+  .grams-input{
+    flex:1;
+    text-align:center;
+    background:transparent;
+    border:none;
+    color:var(--flour);
+    font-family:'Space Mono', monospace;
+    font-size:30px;
+    font-weight:700;
+    width:100%;
+    outline:none;
+  }
+  .grams-unit{
+    font-family:'Space Mono', monospace;
+    color:var(--flour-dim);
+    font-size:14px;
+    margin-left:-8px;
+  }
+  .presets{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .preset{
+    font-family:'Space Mono', monospace;
+    font-size:11.5px;
+    color:var(--flour-dim);
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:999px;
+    padding:6px 12px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .preset:hover{border-color:var(--gold); color:var(--gold);}
+
+  /* ---------- readout panel ---------- */
+  .stage-tag{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .readout{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:var(--radius);
+    padding:22px 22px 18px;
+    margin-bottom:14px;
+    position:relative;
+    overflow:hidden;
+  }
+  .readout::before{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(120deg, transparent 40%, var(--gold-soft) 100%);
+    pointer-events:none;
+  }
+  .readout-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:18px;
+    position:relative;
+  }
+  .ratio-badge{
+    font-family:'Fraunces', serif;
+    font-weight:680;
+    font-size:26px;
+    color:var(--flour);
+  }
+  .rise-badge{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    color:var(--sage);
+    text-align:right;
+    line-height:1.5;
+  }
+  .rise-badge .n{color:var(--flour); font-size:14px; display:block;}
+
+  .weights{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+    position:relative;
+  }
+  .weight{
+    background:rgba(244,234,212,0.03);
+    border:1px solid var(--rule);
+    border-radius:10px;
+    padding:12px 8px;
+    text-align:center;
+  }
+  .weight .lbl{
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--flour-dim);
+    margin-bottom:6px;
+  }
+  .weight .num{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:19px;
+    color:var(--flour);
+  }
+  .weight.starter .num{color:var(--gold);}
+
+  .link{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:2px 4px 14px 8px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    color:var(--flour-dim);
+  }
+  .link .arrow{color:var(--sage); font-size:14px;}
+  .link .line{flex:1; height:1px; background:var(--rule);}
+
+  .footnote{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    color:var(--flour-dim);
+    text-align:center;
+    margin-top:26px;
+    line-height:1.7;
+    letter-spacing:.02em;
+  }
+
+  @media(max-width:420px){
+    h1{font-size:34px;}
+    .ratio-badge{font-size:21px;}
+    .weight .num{font-size:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Kitchen Scale for Live Culture</div>
+  <h1>Levain <em>Calculator</em></h1>
+  <div class="sub">Set your timeline and target yield — read off exactly what to weigh out. Built from a feeding ratio chart, ambient 70–72°F (21–22°C).</div>
+
+  <div class="seg">
+    <button id="modeSingle" class="active">Single Feed</button>
+    <button id="modeTwo">Two-Stage Build</button>
+  </div>
+
+  <!-- TOTAL TIMELINE (two-stage only) -->
+  <div class="card" id="totalCard" style="display:none;">
+    <div class="card-label"><span class="t">Total time available</span><span class="v" id="totalHoursVal">16 hrs</span></div>
+    <div class="timeline">
+      <div class="track"></div>
+      <input type="range" id="totalHours" min="8" max="32" step="1" value="16">
+    </div>
+    <div class="zone-readout"><span class="dot"></span><span id="splitReadout">Split across two feeds below</span></div>
+  </div>
+
+  <!-- FEED 1 TIMELINE -->
+  <div class="card" id="feed1Card">
+    <div class="card-label"><span class="t" id="feed1Title">Time until starter is needed</span><span class="v" id="feed1HoursVal">10 hrs</span></div>
+    <div class="timeline">
+      <div class="track"></div>
+      <input type="range" id="feed1Hours" min="4" max="16" step="0.5" value="10">
+      <div class="ticks" id="feed1Ticks"></div>
+    </div>
+    <div class="zone-readout"><span class="dot"></span><span id="feed1Zone">—</span></div>
+  </div>
+
+  <!-- FEED 2 TIMELINE (two-stage only) -->
+  <div class="card" id="feed2Card" style="display:none;">
+    <div class="card-label"><span class="t">Feed 2 — final rise</span><span class="v" id="feed2HoursVal">6 hrs</span></div>
+    <div class="timeline">
+      <div class="track"></div>
+      <input type="range" id="feed2Hours" min="4" max="16" step="0.5" value="6">
+      <div class="ticks" id="feed2Ticks"></div>
+    </div>
+    <div class="zone-readout"><span class="dot"></span><span id="feed2Zone">—</span></div>
+  </div>
+
+  <!-- FINAL YIELD -->
+  <div class="card">
+    <div class="card-label"><span class="t">Final starter needed</span><span class="v">grams, total</span></div>
+    <div class="grams-row">
+      <button class="stepper-btn" id="gramsDown">–</button>
+      <input class="grams-input" id="gramsInput" type="number" value="200" min="10" step="5">
+      <span class="grams-unit">g</span>
+      <button class="stepper-btn" id="gramsUp">+</button>
+    </div>
+    <div class="presets">
+      <div class="preset" data-g="60">60g</div>
+      <div class="preset" data-g="200">200g</div>
+      <div class="preset" data-g="500">500g</div>
+      <div class="preset" data-g="1000">1000g</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results"></div>
+
+  <div class="footnote">*Ratios &amp; rise windows drawn from the sourdough feeding chart · ambient 70–72°F (21–22°C)<br>Cooler kitchens run slower, warmer kitchens run faster — adjust hours accordingly.</div>
+
+</div>
+
+<script>
+  const FEED_TABLE = [
+    {ratio:1,  lo:4,  hi:6,  label:"1 : 1 : 1"},
+    {ratio:2,  lo:5,  hi:7,  label:"1 : 2 : 2"},
+    {ratio:3,  lo:6,  hi:8,  label:"1 : 3 : 3"},
+    {ratio:4,  lo:7,  hi:10, label:"1 : 4 : 4"},
+    {ratio:5,  lo:8,  hi:12, label:"1 : 5 : 5"},
+    {ratio:6,  lo:10, hi:14, label:"1 : 6 : 6"},
+    {ratio:10, lo:12, hi:16, label:"1 : 10 : 10"},
+  ];
+  const TICK_POINTS = [4,5,6,7,8,10,12,14,16];
+  const MAJOR = [4,8,12,16];
+
+  function pickZone(hours){
+    let matches = FEED_TABLE.filter(t => hours >= t.lo && hours <= t.hi);
+    if (matches.length) return matches[0];
+    let best=null, bestDist=Infinity;
+    for(const t of FEED_TABLE){
+      const dist = hours < t.lo ? (t.lo-hours) : (hours-t.hi);
+      if(dist < bestDist){ bestDist = dist; best = t; }
+    }
+    return best;
+  }
+
+  function computeFeed(hours, finalGrams){
+    const zone = pickZone(hours);
+    const totalParts = 1 + zone.ratio*2;
+    const starter = finalGrams/totalParts;
+    const flour = zone.ratio*starter;
+    const water = flour;
+    return {zone, starter, flour, water, hours};
+  }
+
+  function fmt(n){
+    const r = Math.round(n*10)/10;
+    return (r % 1 === 0) ? r.toFixed(0) : r.toFixed(1);
+  }
+
+  function buildTicks(container, min, max){
+    container.innerHTML = "";
+    TICK_POINTS.filter(v => v>=min && v<=max).forEach(v=>{
+      const pct = ((v-min)/(max-min))*100;
+      const el = document.createElement('div');
+      el.className = 'tick' + (MAJOR.includes(v) ? ' major' : '');
+      el.style.left = pct+'%';
+      el.innerHTML = '<span class="mark"></span>'+v;
+      container.appendChild(el);
+    });
+  }
+
+  // ---------- state ----------
+  let mode = 'single'; // or 'two'
+
+  const els = {
+    modeSingle: document.getElementById('modeSingle'),
+    modeTwo: document.getElementById('modeTwo'),
+    totalCard: document.getElementById('totalCard'),
+    totalHours: document.getElementById('totalHours'),
+    totalHoursVal: document.getElementById('totalHoursVal'),
+    splitReadout: document.getElementById('splitReadout'),
+    feed1Card: document.getElementById('feed1Card'),
+    feed1Title: document.getElementById('feed1Title'),
+    feed1Hours: document.getElementById('feed1Hours'),
+    feed1HoursVal: document.getElementById('feed1HoursVal'),
+    feed1Ticks: document.getElementById('feed1Ticks'),
+    feed1Zone: document.getElementById('feed1Zone'),
+    feed2Card: document.getElementById('feed2Card'),
+    feed2Hours: document.getElementById('feed2Hours'),
+    feed2HoursVal: document.getElementById('feed2HoursVal'),
+    feed2Ticks: document.getElementById('feed2Ticks'),
+    feed2Zone: document.getElementById('feed2Zone'),
+    gramsInput: document.getElementById('gramsInput'),
+    gramsUp: document.getElementById('gramsUp'),
+    gramsDown: document.getElementById('gramsDown'),
+    results: document.getElementById('results'),
+  };
+
+  buildTicks(els.feed1Ticks, 4, 16);
+  buildTicks(els.feed2Ticks, 4, 16);
+
+  function setMode(m){
+    mode = m;
+    els.modeSingle.classList.toggle('active', m==='single');
+    els.modeTwo.classList.toggle('active', m==='two');
+    els.totalCard.style.display = m==='two' ? 'block' : 'none';
+    els.feed2Card.style.display = m==='two' ? 'block' : 'none';
+    els.feed1Title.textContent = m==='two' ? 'Feed 1 — building the levain' : 'Time until starter is needed';
+
+    if(m==='two'){
+      // constrain feed1 hours to leave room for feed2 within total
+      const total = parseFloat(els.totalHours.value);
+      const f1max = Math.min(16, total-4);
+      els.feed1Hours.max = f1max;
+      if(parseFloat(els.feed1Hours.value) > f1max) els.feed1Hours.value = f1max;
+      syncFeed2FromTotal();
+    }
+    render();
+  }
+
+  function syncFeed2FromTotal(){
+    const total = parseFloat(els.totalHours.value);
+    const f1 = parseFloat(els.feed1Hours.value);
+    let f2 = total - f1;
+    f2 = Math.max(4, Math.min(16, f2));
+    els.feed2Hours.value = f2;
+  }
+
+  els.modeSingle.addEventListener('click', ()=>setMode('single'));
+  els.modeTwo.addEventListener('click', ()=>setMode('two'));
+
+  els.totalHours.addEventListener('input', ()=>{
+    const total = parseFloat(els.totalHours.value);
+    const f1max = Math.min(16, total-4);
+    els.feed1Hours.max = f1max;
+    if(parseFloat(els.feed1Hours.value) > f1max) els.feed1Hours.value = f1max;
+    syncFeed2FromTotal();
+    render();
+  });
+
+  els.feed1Hours.addEventListener('input', ()=>{
+    if(mode==='two') syncFeed2FromTotal();
+    render();
+  });
+  els.feed2Hours.addEventListener('input', render);
+
+  els.gramsUp.addEventListener('click', ()=>{
+    els.gramsInput.value = Math.max(10, parseFloat(els.gramsInput.value||0) + 10);
+    render();
+  });
+  els.gramsDown.addEventListener('click', ()=>{
+    els.gramsInput.value = Math.max(10, parseFloat(els.gramsInput.value||0) - 10);
+    render();
+  });
+  els.gramsInput.addEventListener('input', render);
+  document.querySelectorAll('.preset').forEach(p=>{
+    p.addEventListener('click', ()=>{
+      els.gramsInput.value = p.dataset.g;
+      render();
+    });
+  });
+
+  function readoutCard(stageLabel, feed, isFinal){
+    const div = document.createElement('div');
+    div.innerHTML = `
+      ${stageLabel ? `<div class="stage-tag"><span>●</span>${stageLabel}</div>` : ``}
+      <div class="readout">
+        <div class="readout-top">
+          <div class="ratio-badge">${feed.zone.label}</div>
+          <div class="rise-badge">rise window<span class="n">${feed.zone.lo}–${feed.zone.hi} hrs</span></div>
+        </div>
+        <div class="weights">
+          <div class="weight starter"><div class="lbl">Starter</div><div class="num">${fmt(feed.starter)}g</div></div>
+          <div class="weight"><div class="lbl">Flour</div><div class="num">${fmt(feed.flour)}g</div></div>
+          <div class="weight"><div class="lbl">Water</div><div class="num">${fmt(feed.water)}g</div></div>
+        </div>
+      </div>
+    `;
+    return div;
+  }
+
+  function render(){
+    const finalGrams = Math.max(10, parseFloat(els.gramsInput.value || 0));
+    els.feed1HoursVal.textContent = `${fmt(parseFloat(els.feed1Hours.value))} hrs`;
+    els.feed2HoursVal.textContent = `${fmt(parseFloat(els.feed2Hours.value))} hrs`;
+    els.totalHoursVal.textContent = `${fmt(parseFloat(els.totalHours.value))} hrs`;
+
+    els.results.innerHTML = '';
+
+    if(mode === 'single'){
+      const feed = computeFeed(parseFloat(els.feed1Hours.value), finalGrams);
+      els.feed1Zone.textContent = `${feed.zone.label} ratio · ${feed.zone.lo}–${feed.zone.hi} hr rise`;
+      els.results.appendChild(readoutCard(null, feed, true));
+    } else {
+      const h1 = parseFloat(els.feed1Hours.value);
+      const h2 = parseFloat(els.feed2Hours.value);
+
+      const feed2 = computeFeed(h2, finalGrams);              // final feed, defines what stage 1 must yield
+      const feed1 = computeFeed(h1, feed2.starter);            // stage 1 yields exactly feed2's starter requirement
+
+      els.feed1Zone.textContent = `${feed1.zone.label} ratio · yields ${fmt(feed1.starter+feed1.flour+feed1.water)}g for Feed 2`;
+      els.feed2Zone.textContent = `${feed2.zone.label} ratio · needs ${fmt(feed2.starter)}g mature starter`;
+      els.splitReadout.textContent = `Feed 1: ${fmt(h1)} hrs  →  Feed 2: ${fmt(h2)} hrs`;
+
+      els.results.appendChild(readoutCard('Feed 1 — build', feed1, false));
+
+      const link = document.createElement('div');
+      link.className = 'link';
+      link.innerHTML = `<div class="line"></div><span class="arrow">↓</span> feeds into Feed 2 as its starter <div class="line"></div>`;
+      els.results.appendChild(link);
+
+      els.results.appendChild(readoutCard('Feed 2 — final', feed2, true));
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>
