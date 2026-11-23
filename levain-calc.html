@@ -198,6 +198,35 @@
   }
   .zone-readout .dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
 
+  .ready-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    margin-top:14px;
+    padding-top:12px;
+    border-top:1px dashed var(--rule);
+  }
+  .ready-line .rl-lbl{
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--flour-dim);
+  }
+  .ready-line .rl-val{
+    font-family:'Space Mono', monospace;
+    font-weight:700;
+    font-size:15px;
+    color:var(--gold);
+    text-align:right;
+  }
+  .ready-line .rl-val small{
+    font-weight:400;
+    font-size:11px;
+    color:var(--flour-dim);
+    margin-right:6px;
+  }
+
   /* ---------- grams stepper ---------- */
   .grams-row{
     display:flex;
@@ -391,6 +420,7 @@
       <div class="ticks" id="feed1Ticks"></div>
     </div>
     <div class="zone-readout"><span class="dot"></span><span id="feed1Zone">—</span></div>
+    <div class="ready-line"><span class="rl-lbl" id="feed1ReadyLbl">Starter ready by</span><span class="rl-val" id="feed1Ready">—</span></div>
   </div>
 
   <!-- FEED 2 TIMELINE (two-stage only) -->
@@ -402,6 +432,7 @@
       <div class="ticks" id="feed2Ticks"></div>
     </div>
     <div class="zone-readout"><span class="dot"></span><span id="feed2Zone">—</span></div>
+    <div class="ready-line"><span class="rl-lbl">Final starter ready by</span><span class="rl-val" id="feed2Ready">—</span></div>
   </div>
 
   <!-- FINAL YIELD -->
@@ -427,7 +458,7 @@
   <div class="footnote">*Ratios &amp; rise windows drawn from the sourdough feeding chart · ambient 70–72°F (21–22°C)<br>Cooler kitchens run slower, warmer kitchens run faster — adjust hours accordingly.</div>
 
   <div style="text-align:center; margin-top:18px; opacity:0.85;">
-    <img src="https://visitor-badge.laobi.icu/badge?page_id=dandcza.levain-calculator&text=visits&color=241a12&left_color=241a12" alt="visitor count" style="border-radius:6px;">
+    <img src="https://visitor-badge.laobi.icu/badge?page_id=levain-calculator.sourdough&text=visits&color=241a12&left_color=241a12" alt="visitor count" style="border-radius:6px;">
   </div>
 
 </div>
@@ -470,6 +501,19 @@
     return (r % 1 === 0) ? r.toFixed(0) : r.toFixed(1);
   }
 
+  function formatReady(hoursFromNow){
+    const now = new Date();
+    const t = new Date(now.getTime() + hoursFromNow*3600*1000);
+    const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const dayDiff = Math.round((startOfDay(t) - startOfDay(now)) / 86400000);
+    let day;
+    if(dayDiff === 0) day = 'Today';
+    else if(dayDiff === 1) day = 'Tomorrow';
+    else day = t.toLocaleDateString([], {weekday:'short', day:'numeric', month:'short'});
+    const time = t.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    return `<small>${day}</small>${time}`;
+  }
+
   function buildTicks(container, min, max){
     container.innerHTML = "";
     TICK_POINTS.filter(v => v>=min && v<=max).forEach(v=>{
@@ -503,6 +547,9 @@
     feed2HoursVal: document.getElementById('feed2HoursVal'),
     feed2Ticks: document.getElementById('feed2Ticks'),
     feed2Zone: document.getElementById('feed2Zone'),
+    feed1Ready: document.getElementById('feed1Ready'),
+    feed1ReadyLbl: document.getElementById('feed1ReadyLbl'),
+    feed2Ready: document.getElementById('feed2Ready'),
     gramsInput: document.getElementById('gramsInput'),
     gramsUp: document.getElementById('gramsUp'),
     gramsDown: document.getElementById('gramsDown'),
@@ -601,8 +648,11 @@
     els.results.innerHTML = '';
 
     if(mode === 'single'){
-      const feed = computeFeed(parseFloat(els.feed1Hours.value), finalGrams);
+      const h = parseFloat(els.feed1Hours.value);
+      const feed = computeFeed(h, finalGrams);
       els.feed1Zone.textContent = `${feed.zone.label} ratio · ${feed.zone.lo}–${feed.zone.hi} hr rise`;
+      els.feed1ReadyLbl.textContent = 'Starter ready by';
+      els.feed1Ready.innerHTML = formatReady(h);
       els.results.appendChild(readoutCard(null, feed, true));
     } else {
       const h1 = parseFloat(els.feed1Hours.value);
@@ -614,6 +664,9 @@
       els.feed1Zone.textContent = `${feed1.zone.label} ratio · yields ${fmt(feed1.starter+feed1.flour+feed1.water)}g for Feed 2`;
       els.feed2Zone.textContent = `${feed2.zone.label} ratio · needs ${fmt(feed2.starter)}g mature starter`;
       els.splitReadout.textContent = `Feed 1: ${fmt(h1)} hrs  →  Feed 2: ${fmt(h2)} hrs`;
+      els.feed1ReadyLbl.textContent = 'Feed 1 ready by (feed again then)';
+      els.feed1Ready.innerHTML = formatReady(h1);
+      els.feed2Ready.innerHTML = formatReady(h1 + h2);
 
       els.results.appendChild(readoutCard('Feed 1 — build', feed1, false));
 
@@ -627,6 +680,7 @@
   }
 
   render();
+  setInterval(render, 30000); // keep "ready by" times current as the clock moves
 </script>
 </body>
 </html>
